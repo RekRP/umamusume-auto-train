@@ -44,12 +44,14 @@ class Autopilot:
     self.skill_visits = 0
     self.skills_done = False
     self.last_screen = None
+    self.idle_streak = 0
 
   # --- screen reading -------------------------------------------------
   def identify(self):
     """First matching entry of the table, or (None, None)."""
     for screen in SCREENS:
-      pos = device_action.locate(screen.identify, confidence=MATCH_THRESHOLD)
+      pos = device_action.locate(screen.identify, confidence=MATCH_THRESHOLD,
+                                 region_ltrb=screen.identify_region)
       if pos:
         return screen, pos
     return None, None
@@ -177,7 +179,10 @@ class Autopilot:
       if self.last_screen is not None:
         info("Nothing actionable on screen - waiting (training, loading, or a cutscene).")
         self.last_screen = None
+      self.idle_streak += 1
       return "idle"
+
+    self.idle_streak = 0
 
     if screen.name != self.last_screen:
       info(f"Screen: {screen.name} - {screen.action}")
@@ -221,13 +226,20 @@ def run() -> None:
   pilot = Autopilot(cfg)
   info(f"Autopilot started. Borrow targets: {cfg.borrow_card_targets or '(none configured)'}")
 
-  # Settling resolves in well under a second, so retry quickly; a stable
-  # nothing means training or a cutscene, where polling hard is pointless.
-  pause = {"acted": 1.0, "settling": 0.3, "idle": cfg.idle_poll_seconds}
+  # A short unrecognised gap is a screen transition or a load, and resolves in
+  # seconds; a sustained one is the 50 minutes of training, where polling hard
+  # is pointless. Back off rather than paying the long wait at every transition.
+  BRIEF_IDLES = 5
 
   try:
     while bot.is_bot_running:
-      sleep(pause[pilot.step()])
+      status = pilot.step()
+      if status == "acted":
+        sleep(1.0)
+      elif status == "settling":
+        sleep(0.3)
+      else:
+        sleep(1.0 if pilot.idle_streak <= BRIEF_IDLES else cfg.idle_poll_seconds)
   except BotStopException as e:
     info(f"{e}")
   except KeyboardInterrupt:

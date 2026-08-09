@@ -42,13 +42,23 @@ def template(rel_path: str) -> np.ndarray | None:
   return _cache[rel_path]
 
 
-def best_score(frame: np.ndarray, rel_path: str) -> tuple[float, tuple[int, int]]:
+def best_score(frame: np.ndarray, rel_path: str,
+               region: tuple[int, int, int, int] | None = None) -> tuple[float, tuple[int, int]]:
   tpl = template(rel_path)
-  if tpl is None or tpl.shape[0] > frame.shape[0] or tpl.shape[1] > frame.shape[1]:
+  if tpl is None:
+    return 0.0, (0, 0)
+
+  offset_x, offset_y = 0, 0
+  if region:
+    left, top, right, bottom = region
+    frame = frame[top:bottom, left:right]
+    offset_x, offset_y = left, top
+
+  if tpl.shape[0] > frame.shape[0] or tpl.shape[1] > frame.shape[1]:
     return 0.0, (0, 0)
   res = cv2.matchTemplate(frame, tpl, cv2.TM_CCOEFF_NORMED)
   _, score, _, loc = cv2.minMaxLoc(res)
-  return float(score), loc
+  return float(score), (loc[0] + offset_x, loc[1] + offset_y)
 
 
 def grab(device) -> np.ndarray:
@@ -69,7 +79,7 @@ def describe(frame: np.ndarray) -> tuple[str, str, list[str]]:
   matches = []
   winner = None
   for screen in SCREENS:
-    score, loc = best_score(frame, screen.identify)
+    score, loc = best_score(frame, screen.identify, screen.identify_region)
     if score >= MATCH_THRESHOLD:
       matches.append(f"{score:.3f}  {screen.name:20s} at {loc}")
       if winner is None:

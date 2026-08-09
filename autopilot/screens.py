@@ -31,6 +31,15 @@ class Screen:
   click: str | None = None
   # Name of a special routine in the loop (borrowing, skill buying, branches).
   handler: str | None = None
+  # Restricts where `identify` may match. Only needed where a shared button
+  # would otherwise make two different screens look alike.
+  identify_region: tuple[int, int, int, int] | None = None
+
+
+# Result screens put Next at y~963, Trainee Select puts it at y~879. Without
+# this band, the slow header slide on Trainee Select leaves a window where only
+# the button is drawn and the generic result rule claims the screen.
+RESULT_BUTTON_BAND = (0, 930, 800, 1080)
 
 
 SCREENS: tuple[Screen, ...] = (
@@ -73,7 +82,8 @@ SCREENS: tuple[Screen, ...] = (
   Screen("confirmation", f"{BTN}/confirm_btn.png",
          "accept a confirmation dialog", click=f"{BTN}/confirm_btn.png"),
   Screen("result", f"{BTN}/next_btn.png",
-         "advance a result screen", click=f"{BTN}/next_btn.png"),
+         "advance a result screen", click=f"{BTN}/next_btn.png",
+         identify_region=RESULT_BUTTON_BAND),
   Screen("dialog", f"{BTN}/close_btn.png",
          "close a dialog", click=f"{BTN}/close_btn.png"),
 )
