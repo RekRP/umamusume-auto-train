@@ -129,6 +129,19 @@ def find_best(rows: list[BorrowRow], targets: list[str], threshold: float = 0.80
   return best if best[2] >= threshold else (None, "", 0.0)
 
 
-def is_duplicate(row: BorrowRow) -> bool:
-  """Rows flagged "Duplicate Support" already have that card in the deck."""
-  return any("duplicate" in normalize(line) for line in row.lines)
+def duplicate_row_indexes(rows: list[BorrowRow], badge_ys: list[int],
+                          max_gap: int = 60) -> set[int]:
+  """Rows carrying a "Duplicate Support" badge, by index.
+
+  The badge cannot be read as text: it is drawn over the card thumbnail, left
+  of the text column that gets OCR'd. It is matched as an image instead, and
+  sits just above the row it belongs to - measured at y=468 for a row whose
+  text starts at y=489 - so each badge is attributed to the next row down.
+  """
+  flagged: set[int] = set()
+  for badge_y in badge_ys:
+    below = [(row.top - badge_y, index) for index, row in enumerate(rows)
+             if 0 <= row.top - badge_y <= max_gap]
+    if below:
+      flagged.add(min(below)[1])
+  return flagged

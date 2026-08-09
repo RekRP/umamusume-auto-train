@@ -27,10 +27,10 @@ from utils.notifications import StopReason
 from utils.tools import sleep
 
 from autopilot import config as auto_config
-from autopilot.borrow_match import find_best, is_duplicate, parse_rows
+from autopilot.borrow_match import duplicate_row_indexes, find_best, parse_rows
 from autopilot.screens import (
   BORROW_ALLOWLIST, BORROW_LIST_LTRB, BORROW_ROW_X, BORROW_SCROLL_FROM,
-  BORROW_SCROLL_TO, EDIT_AGENDA_BUTTON, FRIENDS_SLOT_EMPTY, LOAD_LIST_BUTTON,
+  BORROW_SCROLL_TO, DUPLICATE_BADGE, EDIT_AGENDA_BUTTON, FRIENDS_SLOT_EMPTY, LOAD_LIST_BUTTON,
   MATCH_THRESHOLD, MY_AGENDAS_BUTTON, SCREENS, SKILL_POINTS_LTRB,
   SKILLS_BUTTON, START_BUTTON, START_CAREER_BUTTON,
 )
@@ -96,6 +96,12 @@ class Autopilot:
     pil = pil.resize((pil.width * 3, pil.height * 3), Image.BICUBIC)
     return extract_number(pil)
 
+  def duplicate_badge_ys(self) -> list[int]:
+    """Y positions of every "Duplicate Support" badge currently on screen."""
+    frame = device_action.screenshot()
+    boxes = device_action.match_template(DUPLICATE_BADGE, frame, threshold=MATCH_THRESHOLD)
+    return [y for _x, y, _w, _h in boxes]
+
   def read_borrow_rows(self):
     crop = device_action.screenshot(region_ltrb=BORROW_LIST_LTRB)
     result = get_reader().readtext(crop, allowlist=BORROW_ALLOWLIST)
@@ -121,13 +127,18 @@ class Autopilot:
     for attempt in range(self.cfg.borrow_max_scrolls + 1):
       rows = self.read_borrow_rows()
       debug(f"Borrow list page {attempt + 1}: {[r.card for r in rows]}")
-      row, target, score = find_best(rows, targets, self.cfg.borrow_match_threshold)
-      if row and not is_duplicate(row):
+
+      duplicates = duplicate_row_indexes(rows, self.duplicate_badge_ys())
+      if duplicates:
+        debug(f"Duplicate support on rows {sorted(duplicates)}: "
+              f"{[rows[i].card for i in sorted(duplicates)]}")
+      usable = [row for index, row in enumerate(rows) if index not in duplicates]
+
+      row, target, score = find_best(usable, targets, self.cfg.borrow_match_threshold)
+      if row:
         info(f"Borrowing {target!r} - matched {row.card!r} ({score:.3f}) from {row.friend!r}.")
         device_action.click((BORROW_ROW_X, row.center_y))
         return
-      if row:
-        debug(f"Skipping {row.card!r}: flagged as a duplicate support.")
       device_action.flush_screenshot_cache()
       device_action.swipe(BORROW_SCROLL_FROM, BORROW_SCROLL_TO)
       sleep(0.6)
