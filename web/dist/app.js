@@ -33562,10 +33562,14 @@ function AutopilotSection({ config: config2, updateConfig }) {
       "Autopilot"
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground mb-4", children: [
-      "Runs Independent Training back to back: borrows a support card, starts the run, buys skills when it ends, then starts the next one. Run it with",
+      "Runs Independent Training back to back: borrows a support card, starts the run, buys skills when it ends, then starts the next one. Press",
+      " ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("kbd", { className: "px-1 py-0.5 rounded bg-muted font-mono", children: "F2" }),
+      " to start and stop it, or run",
       " ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("code", { className: "px-1 py-0.5 rounded bg-muted", children: "py -3.12 autopilot_run.py" }),
-      "."
+      " ",
+      "separately. What it buys at the end of a run is set in the two Skill sections below."
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-lg font-medium mb-1", children: "Support cards to borrow" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground mb-3", children: [
@@ -40946,8 +40950,15 @@ function App() {
         return /* @__PURE__ */ jsxRuntimeExports.jsx(TimelineSection, { ...props });
       case "function-mods":
         return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(FunctionModsSection, { ...props }) });
+      // The skill sections are shown here too: they decide what the autopilot
+      // buys when a run ends, and hunting for them across two other tabs was
+      // the thing people missed.
       case "autopilot":
-        return /* @__PURE__ */ jsxRuntimeExports.jsx(AutopilotSection, { ...props });
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(AutopilotSection, { ...props }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SkillSection$1, { ...props }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SkillSection, { ...props })
+        ] });
       default:
         return /* @__PURE__ */ jsxRuntimeExports.jsx(SetUpSection, { ...props });
     }

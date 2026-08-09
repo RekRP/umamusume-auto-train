@@ -96,8 +96,12 @@ export default function AutopilotSection({ config, updateConfig }: Props) {
 
       <p className="text-sm text-muted-foreground mb-4">
         Runs Independent Training back to back: borrows a support card, starts the run,
-        buys skills when it ends, then starts the next one. Run it with{" "}
-        <code className="px-1 py-0.5 rounded bg-muted">py -3.12 autopilot_run.py</code>.
+        buys skills when it ends, then starts the next one. Press{" "}
+        <kbd className="px-1 py-0.5 rounded bg-muted font-mono">F2</kbd> to start and stop
+        it, or run{" "}
+        <code className="px-1 py-0.5 rounded bg-muted">py -3.12 autopilot_run.py</code>{" "}
+        separately. What it buys at the end of a run is set in the two Skill sections
+        below.
       </p>
 
       <p className="text-lg font-medium mb-1">Support cards to borrow</p>
