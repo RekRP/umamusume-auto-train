@@ -12,6 +12,8 @@ a misread from turning into a stray tap.
 
 from __future__ import annotations
 
+import time
+
 from PIL import Image
 
 import core.bot as bot
@@ -24,6 +26,7 @@ from utils.adb_actions import init_adb
 from utils.device_action_wrapper import BotStopException
 from utils.log import debug, error, info, warning
 from utils.notifications import StopReason
+from utils.screenshot import are_screenshots_same
 from utils.tools import sleep
 
 from autopilot import config as auto_config
@@ -40,6 +43,10 @@ CLOSE_BUTTON = "assets/buttons/close_btn.png"
 
 # Consecutive unsettled checks before acting on the latest reading anyway.
 FORCE_ACT_AFTER = 8
+
+# Mean pixel difference below which the borrow list counts as stopped. Low,
+# because a list that has genuinely stopped is pixel-identical between looks.
+LIST_STILL_DIFF = 1.0
 
 
 class Autopilot:
@@ -103,6 +110,29 @@ class Autopilot:
     boxes = device_action.match_template(DUPLICATE_BADGE, frame, threshold=MATCH_THRESHOLD)
     return [y for _x, y, _w, _h in boxes]
 
+  def wait_for_borrow_list_still(self, timeout: float = 5.0, poll: float = 0.25) -> bool:
+    """Block until the borrow list stops moving.
+
+    A swipe keeps gliding after the finger lifts. Reading rows mid-glide gives
+    positions that are already stale by the time the tap lands, which picks the
+    wrong card. A fixed sleep cannot win here - too short and it still moves,
+    too long and every page costs that wait - so watch until two consecutive
+    looks match.
+    """
+    deadline = time.time() + timeout
+    previous = None
+    while time.time() < deadline:
+      device_action.flush_screenshot_cache()
+      current = device_action.screenshot(region_ltrb=BORROW_LIST_LTRB)
+      if previous is not None and are_screenshots_same(previous, current,
+                                                       diff_threshold=LIST_STILL_DIFF):
+        return True
+      previous = current
+      sleep(poll)
+    warning("Borrow list was still moving after "
+            f"{timeout}s; reading it anyway, the tap may be off.")
+    return False
+
   def read_borrow_rows(self):
     crop = device_action.screenshot(region_ltrb=BORROW_LIST_LTRB)
     result = get_reader().readtext(crop, allowlist=BORROW_ALLOWLIST)
@@ -149,6 +179,9 @@ class Autopilot:
   def scan_borrow_list(self, targets: list[str]) -> bool:
     """Scroll the current list looking for a target. True if one was tapped."""
     for attempt in range(self.cfg.borrow_max_scrolls + 1):
+      # Must settle before reading: row positions are only valid if the list
+      # is where it will still be when the tap lands.
+      self.wait_for_borrow_list_still()
       rows = self.read_borrow_rows()
       debug(f"Borrow list page {attempt + 1}: {[r.card for r in rows]}")
 
@@ -166,7 +199,8 @@ class Autopilot:
 
       device_action.flush_screenshot_cache()
       device_action.swipe(BORROW_SCROLL_FROM, BORROW_SCROLL_TO)
-      sleep(0.6)
+      # Only long enough for the glide to start; the settle check does the rest.
+      sleep(0.3)
     return False
 
   def do_final_confirmation(self, screen):
