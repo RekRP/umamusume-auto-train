@@ -60,8 +60,12 @@ def grab(device) -> np.ndarray:
   return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 
-def describe(frame: np.ndarray) -> tuple[str, list[str]]:
-  """Return the winning line and every matching rule."""
+def describe(frame: np.ndarray) -> tuple[str, str, list[str]]:
+  """Return (dedup key, display line, every matching rule).
+
+  The key deliberately excludes match scores, which drift by a few thousandths
+  as screens animate; keying on them would reprint the same screen endlessly.
+  """
   matches = []
   winner = None
   for screen in SCREENS:
@@ -72,21 +76,25 @@ def describe(frame: np.ndarray) -> tuple[str, list[str]]:
         winner = (screen, score, loc)
 
   if winner is None:
-    return "unrecognised screen - nothing would be clicked", matches
+    return "none", "unrecognised screen - nothing would be clicked", matches
 
   screen, score, loc = winner
-  detail = ""
+  detail, state = "", ""
   if screen.handler == "formation":
     empty, _ = best_score(frame, FRIENDS_SLOT_EMPTY)
+    state = "empty" if empty >= MATCH_THRESHOLD else "filled"
     detail = (f" -> borrow slot EMPTY ({empty:.3f}), would open the borrow list"
-              if empty >= MATCH_THRESHOLD
+              if state == "empty"
               else f" -> borrow slot filled ({empty:.3f}), would press Start Career!")
   elif screen.handler == "complete_career":
     skills, sloc = best_score(frame, SKILLS_BUTTON)
+    state = "skills" if skills >= MATCH_THRESHOLD else "no_skills"
     detail = (f" -> Skills button found ({skills:.3f}) at {sloc}"
-              if skills >= MATCH_THRESHOLD else " -> no Skills button visible")
+              if state == "skills" else " -> no Skills button visible")
 
-  return f"{screen.name}  ({score:.3f})  would: {screen.action}{detail}", matches
+  return (f"{screen.name}|{state}",
+          f"{screen.name}  ({score:.3f})  would: {screen.action}{detail}",
+          matches)
 
 
 def main() -> int:
@@ -110,13 +118,13 @@ def main() -> int:
   last = None
   try:
     while True:
-      line, matches = describe(grab(device))
-      if line != last:
+      key, line, matches = describe(grab(device))
+      if key != last:
         print(f"{time.strftime('%H:%M:%S')}  {line}")
         if args.all and len(matches) > 1:
           for m in matches[1:]:
             print(f"          also matched: {m}")
-        last = line
+        last = key
       time.sleep(args.poll)
   except KeyboardInterrupt:
     print("\n[OK] stopped")
