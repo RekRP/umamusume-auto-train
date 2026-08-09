@@ -40,6 +40,12 @@ SCREENS: tuple[Screen, ...] = (
   # --- start of a run -------------------------------------------------
   Screen("borrow_card", f"{AUTO}/borrow_card_header.png",
          "find and tap the wanted support card", handler="borrow"),
+  # Sits between Home and Trainee Select. Its header bar and its Next button
+  # are both in the same place as Trainee Select's, so the header text is the
+  # only thing telling them apart: this template scores 0.663 on Trainee
+  # Select and theirs scores 0.656 here.
+  Screen("scenario_select", f"{AUTO}/scenario_select_header.png",
+         "keep the shown scenario and continue", click=f"{BTN}/next_btn.png"),
   Screen("trainee_select", f"{AUTO}/trainee_select_header.png",
          "keep the selected trainee and continue", click=f"{BTN}/next_btn.png"),
   Screen("support_formation", f"{AUTO}/start_career_btn.png",
