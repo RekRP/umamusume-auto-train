@@ -54,6 +54,30 @@ class Autopilot:
         return screen, pos
     return None, None
 
+  def identify_settled(self):
+    """Identify twice, reporting only a reading that holds across both.
+
+    Screens fade in and their parts do not arrive together: entering Trainee
+    Select draws its Next button before its header, so for a frame or two it
+    looks like a generic result screen. Acting then clicks whatever happens to
+    sit under that button. Confirming across two reads costs a fraction of a
+    second and removes the whole class of transitional misfires.
+
+    Returns (screen, pos, status) where status is "stable" or "settling".
+    A stable reading of nothing is (None, None, "stable").
+    """
+    first, _ = self.identify()
+    sleep(0.4)
+    device_action.flush_screenshot_cache()
+    second, pos = self.identify()
+
+    first_name = first.name if first else None
+    second_name = second.name if second else None
+    if first_name != second_name:
+      debug(f"Screen still settling ({first_name} -> {second_name}), waiting.")
+      return None, None, "settling"
+    return second, pos, "stable"
+
   def read_skill_points(self) -> int:
     """Skill point total on the Learn screen, or -1 if unreadable."""
     crop = device_action.screenshot(region_ltrb=SKILL_POINTS_LTRB)
@@ -141,16 +165,19 @@ class Autopilot:
                                      region_ltrb=constants.SCREEN_BOTTOM_BBOX)
 
   # --- one tick -------------------------------------------------------
-  def step(self) -> bool:
-    """Act once. Returns False when nothing was recognised."""
+  def step(self) -> str:
+    """Act once. Returns "acted", "settling" or "idle"."""
     device_action.flush_screenshot_cache()
-    screen, _ = self.identify()
+    screen, _, status = self.identify_settled()
+
+    if status == "settling":
+      return "settling"
 
     if screen is None:
       if self.last_screen is not None:
         info("Nothing actionable on screen - waiting (training, loading, or a cutscene).")
         self.last_screen = None
-      return False
+      return "idle"
 
     if screen.name != self.last_screen:
       info(f"Screen: {screen.name} - {screen.action}")
@@ -170,7 +197,7 @@ class Autopilot:
       self.runs_completed += 1
       info(f"Run finished. Completed this session: {self.runs_completed}.")
 
-    return True
+    return "acted"
 
 
 def run() -> None:
@@ -194,10 +221,13 @@ def run() -> None:
   pilot = Autopilot(cfg)
   info(f"Autopilot started. Borrow targets: {cfg.borrow_card_targets or '(none configured)'}")
 
+  # Settling resolves in well under a second, so retry quickly; a stable
+  # nothing means training or a cutscene, where polling hard is pointless.
+  pause = {"acted": 1.0, "settling": 0.3, "idle": cfg.idle_poll_seconds}
+
   try:
     while bot.is_bot_running:
-      acted = pilot.step()
-      sleep(1.0 if acted else cfg.idle_poll_seconds)
+      sleep(pause[pilot.step()])
   except BotStopException as e:
     info(f"{e}")
   except KeyboardInterrupt:
