@@ -39,6 +39,7 @@ const FALLBACK: Autopilot = {
   borrow_max_reloads: 3,
   borrow_match_threshold: 0.8,
   use_agenda: false,
+  buy_leftover_skills: false,
   max_skill_visits: 5,
   wait_when_out_of_tp: true,
   idle_poll_seconds: 20,
@@ -257,6 +258,22 @@ export default function AutopilotSection({ config, updateConfig }: Props) {
           <Tooltips>
             Before starting each run, opens Edit next to Agenda, goes to My Agendas and
             loads the first saved list. Off means whatever agenda is already set is used.
+          </Tooltips>
+        </label>
+
+        <label className="uma-label col-span-3">
+          <Checkbox
+            id="buy-leftover-skills"
+            checked={autopilot.buy_leftover_skills}
+            onCheckedChange={() =>
+              set({ buy_leftover_skills: !autopilot.buy_leftover_skills })
+            }
+          />
+          Spend Leftover Points
+          <Tooltips>
+            After buying everything on your skill list, reopen the skill screen and buy
+            any affordable skill until the points run out. The game greys out what you
+            cannot afford, so it stops on its own.
           </Tooltips>
         </label>
 

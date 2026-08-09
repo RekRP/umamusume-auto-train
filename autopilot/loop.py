@@ -21,6 +21,7 @@ import core.config as core_config
 import utils.constants as constants
 import utils.device_action_wrapper as device_action
 from core.ocr import extract_number, get_reader
+from core.recognizer import compare_brightness
 from core.skill import buy_skill, init_skill_py
 from utils.adb_actions import init_adb
 from utils.device_action_wrapper import BotStopException
@@ -48,6 +49,10 @@ FORCE_ACT_AFTER = 8
 # because a list that has genuinely stopped is pixel-identical between looks.
 LIST_STILL_DIFF = 1.0
 
+# Scroll passes when spending leftover points. Bounded so a skill screen that
+# never reports reaching its end cannot loop forever.
+MAX_LEFTOVER_PASSES = 15
+
 
 class Autopilot:
   def __init__(self, cfg: auto_config.AutopilotConfig):
@@ -55,6 +60,7 @@ class Autopilot:
     self.runs_completed = 0
     self.skill_visits = 0
     self.skills_done = False
+    self.list_pass_done = False
     self.agenda_loaded = False
     self.last_screen = None
     self.idle_streak = 0
@@ -270,13 +276,70 @@ class Autopilot:
       self.leave_skill_screen()
       return
 
-    info(f"Skill points: {sp} (threshold {core_config.SKILL_PTS_CHECK}, "
-         f"{len(core_config.SKILL_LIST)} skill(s) on the buy list).")
-    init_skill_py()
-    if buy_skill({"current_stats": {"sp": sp}}, core_config.SKILL_CHECK_TURNS) is False:
-      warning(f"Skill buying declined: {sp} points against a "
-              f"{core_config.SKILL_PTS_CHECK} threshold. Not returning here this career.")
-      self.leave_skill_screen()
+    if not self.list_pass_done:
+      info(f"Skill points: {sp} (threshold {core_config.SKILL_PTS_CHECK}, "
+           f"{len(core_config.SKILL_LIST)} skill(s) on the buy list).")
+      init_skill_py()
+      if buy_skill({"current_stats": {"sp": sp}}, core_config.SKILL_CHECK_TURNS) is False:
+        warning(f"Skill buying declined: {sp} points against a "
+                f"{core_config.SKILL_PTS_CHECK} threshold. Not returning here this career.")
+        self.leave_skill_screen()
+        return
+      # buy_skill backs out on its way through, so the next visit reopens the
+      # screen at the top of the list - no scrolling back up needed.
+      self.list_pass_done = True
+      if not self.cfg.buy_leftover_skills:
+        self.skills_done = True
+      return
+
+    info(f"List exhausted with {sp} points left, spending them on whatever is affordable.")
+    if self.buy_any_affordable_skills() == 0:
+      info("Nothing else affordable.")
+      self.skills_done = True
+      device_action.locate_and_click("assets/buttons/back_btn.png",
+                                     region_ltrb=constants.SCREEN_BOTTOM_BBOX)
+
+  def buy_any_affordable_skills(self) -> int:
+    """Buy every affordable skill, ignoring the configured list.
+
+    No arithmetic needed: the game greys out what the remaining points cannot
+    cover, and compare_brightness reads that, so clicking every icon that is
+    still lit and rescanning converges on its own.
+    """
+    bought = 0
+    x1, y1 = constants.SCROLLING_SKILL_SCREEN_BBOX[:2]
+
+    for _pass in range(MAX_LEFTOVER_PASSES):
+      before = device_action.screenshot(region_ltrb=constants.SCROLLING_SKILL_SCREEN_BBOX)
+      for x, y, w, h in device_action.match_template("assets/icons/buy_skill.png",
+                                                     before, threshold=0.9):
+        wx, wy = x + x1, y + y1
+        icon = device_action.screenshot(region_xywh=(wx, wy, w, h))
+        if compare_brightness(template_path="assets/icons/buy_skill.png", other=icon,
+                              brightness_diff_threshold=0.20):
+          device_action.click(target=(wx + 5, wy + 5), duration=0.15)
+          bought += 1
+
+      sleep(0.5)
+      device_action.swipe(constants.SKILL_SCROLL_BOTTOM_MOUSE_POS,
+                          constants.SKILL_SCROLL_TOP_MOUSE_POS)
+      # Tap to kill the fling, same as upstream's skill scrolling does.
+      device_action.click(constants.SKILL_SCROLL_TOP_MOUSE_POS, duration=0)
+      sleep(0.25)
+      after = device_action.screenshot(region_ltrb=constants.SCROLLING_SKILL_SCREEN_BBOX)
+      if are_screenshots_same(before, after, diff_threshold=5):
+        break
+
+    if bought:
+      info(f"Adding {bought} extra skill(s).")
+      device_action.locate_and_click("assets/buttons/confirm_btn.png", min_search_time=3)
+      sleep(0.5)
+      device_action.locate_and_click("assets/buttons/learn_btn.png", min_search_time=3)
+      sleep(0.5)
+      device_action.locate_and_click("assets/buttons/close_btn.png", min_search_time=4)
+      device_action.locate_and_click("assets/buttons/back_btn.png", min_search_time=3,
+                                     region_ltrb=constants.SCREEN_BOTTOM_BBOX)
+    return bought
 
   def leave_skill_screen(self) -> None:
     """Back out of the Learn screen and stop revisiting it this career."""
@@ -326,6 +389,7 @@ class Autopilot:
     if screen.name == "training_log":
       self.skill_visits = 0
       self.skills_done = False
+      self.list_pass_done = False
     # Home is the start of a fresh cycle, so the next run needs its own agenda.
     if screen.name == "home":
       self.agenda_loaded = False
