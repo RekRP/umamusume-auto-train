@@ -36,12 +36,6 @@ class Screen:
   identify_region: tuple[int, int, int, int] | None = None
 
 
-# Result screens put Next at y~963, Trainee Select puts it at y~879. Without
-# this band, the slow header slide on Trainee Select leaves a window where only
-# the button is drawn and the generic result rule claims the screen.
-RESULT_BUTTON_BAND = (0, 930, 800, 1080)
-
-
 SCREENS: tuple[Screen, ...] = (
   # --- start of a run -------------------------------------------------
   Screen("borrow_card", f"{AUTO}/borrow_card_header.png",
@@ -81,9 +75,13 @@ SCREENS: tuple[Screen, ...] = (
   # Reached only after the specific Confirm screens above have been ruled out.
   Screen("confirmation", f"{BTN}/confirm_btn.png",
          "accept a confirmation dialog", click=f"{BTN}/confirm_btn.png"),
+  # Deliberately unbounded. Several screens carry a Next button at different
+  # heights - Scenario Select ~907, Trainee Select ~879, result screens ~963 -
+  # and pressing Next is the right move on all of them. Restricting this rule
+  # to the result screens' band stranded the bot on Scenario Select, which has
+  # no template of its own yet.
   Screen("result", f"{BTN}/next_btn.png",
-         "advance a result screen", click=f"{BTN}/next_btn.png",
-         identify_region=RESULT_BUTTON_BAND),
+         "press Next", click=f"{BTN}/next_btn.png"),
   Screen("dialog", f"{BTN}/close_btn.png",
          "close a dialog", click=f"{BTN}/close_btn.png"),
 )
