@@ -33507,6 +33507,7 @@ function SkillSection$1({ config: config2, updateConfig }) {
     ] })
   ] });
 }
+const toCharacterName = (pickerName) => pickerName.split("(")[0].trim();
 const FALLBACK = {
   borrow_card_targets: [],
   borrow_required: true,
@@ -33519,11 +33520,24 @@ const FALLBACK = {
 function AutopilotSection({ config: config2, updateConfig }) {
   const autopilot2 = config2.autopilot ?? FALLBACK;
   const [draft, setDraft] = reactExports.useState("");
+  const { data: events2 } = useQuery({
+    queryKey: ["events"],
+    queryFn: async () => {
+      const res = await fetch("/data/events.json");
+      if (!res.ok) throw new Error("Failed to fetch events");
+      return res.json();
+    },
+    staleTime: 10 * 60 * 1e3
+  });
+  const supportCards = events2?.supportCardArraySchema?.supportCards ?? [];
   const set = (patch) => updateConfig("autopilot", { ...autopilot2, ...patch });
+  const add2 = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed || autopilot2.borrow_card_targets.includes(trimmed)) return;
+    set({ borrow_card_targets: [...autopilot2.borrow_card_targets, trimmed] });
+  };
   const addTarget = () => {
-    const value = draft.trim();
-    if (!value || autopilot2.borrow_card_targets.includes(value)) return;
-    set({ borrow_card_targets: [...autopilot2.borrow_card_targets, value] });
+    add2(draft);
     setDraft("");
   };
   const removeTarget = (value) => set({
@@ -33549,15 +33563,25 @@ function AutopilotSection({ config: config2, updateConfig }) {
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-lg font-medium mb-1", children: "Support cards to borrow" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground mb-3", children: [
-      "Type the card as it appears in the Borrow Card list. The character name on its own is enough — punctuation and unreadable symbols are ignored when matching, so",
+      "Pick from the card list, or type a name. Matching reads the borrow list as text and ignores punctuation, so",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "whitespace-nowrap", children: " “[Q≠0] Agnes Tachyon”" }),
       " and “Agnes Tachyon” both work. Topmost entry wins when several are available."
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 mb-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2 mb-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      EventDialog,
+      {
+        button: "Select Support Card",
+        data: supportCards,
+        setSelected: (value) => {
+          if (typeof value === "string") add2(toCharacterName(value));
+        }
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 mb-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         Input,
         {
-          placeholder: "e.g. Kitasan Black",
+          placeholder: "Or type a name, e.g. Kitasan Black",
           value: draft,
           onChange: (e) => setDraft(e.target.value),
           onKeyDown: (e) => {
@@ -33570,6 +33594,7 @@ function AutopilotSection({ config: config2, updateConfig }) {
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: addTarget, disabled: !draft.trim(), children: "Add" })
     ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mb-3", children: "The card list carries character names only, not card titles, and it lags behind new releases — SSR Agnes Tachyon is missing from it, for instance. Type the name by hand for anything absent, or to tell two cards of the same character apart." }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 mb-6", children: [
       autopilot2.borrow_card_targets.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground italic", children: "No cards yet. With none set the bot stops at the borrow list rather than picking something unintended." }),
       autopilot2.borrow_card_targets.map((target, index2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(

@@ -1,16 +1,35 @@
 import { useState } from "react";
 import { Bot, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import type { Config, UpdateConfigType } from "@/types";
 import type { Autopilot } from "@/types/autopilot.type";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import Tooltips from "@/components/_c/Tooltips";
+import EventDialog from "../event/_c/EventDialog";
 
 type Props = {
   config: Config;
   updateConfig: UpdateConfigType;
 };
+
+type SupportCardEntry = {
+  id: string;
+  name: string;
+  image_url: string;
+  rarity: string;
+  type: string;
+};
+
+type EventsPayload = {
+  supportCardArraySchema?: { supportCards?: SupportCardEntry[] };
+};
+
+// The picker lists cards as "Matikanetannhauser (SSR) (WIT)", but the game's
+// borrow list shows "[Card Title] Matikanetannhauser". Keeping the rarity and
+// type suffix would drag the match score down to roughly 0.62 and miss.
+const toCharacterName = (pickerName: string) => pickerName.split("(")[0].trim();
 
 // Used when config.json predates the autopilot block.
 const FALLBACK: Autopilot = {
@@ -27,13 +46,29 @@ export default function AutopilotSection({ config, updateConfig }: Props) {
   const autopilot = config.autopilot ?? FALLBACK;
   const [draft, setDraft] = useState("");
 
+  // Same key and URL as the Events tab, so the 1.8MB payload is fetched once.
+  const { data: events } = useQuery<EventsPayload>({
+    queryKey: ["events"],
+    queryFn: async () => {
+      const res = await fetch("/data/events.json");
+      if (!res.ok) throw new Error("Failed to fetch events");
+      return res.json();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+  const supportCards = events?.supportCardArraySchema?.supportCards ?? [];
+
   const set = (patch: Partial<Autopilot>) =>
     updateConfig("autopilot", { ...autopilot, ...patch });
 
+  const add = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || autopilot.borrow_card_targets.includes(trimmed)) return;
+    set({ borrow_card_targets: [...autopilot.borrow_card_targets, trimmed] });
+  };
+
   const addTarget = () => {
-    const value = draft.trim();
-    if (!value || autopilot.borrow_card_targets.includes(value)) return;
-    set({ borrow_card_targets: [...autopilot.borrow_card_targets, value] });
+    add(draft);
     setDraft("");
   };
 
@@ -65,15 +100,25 @@ export default function AutopilotSection({ config, updateConfig }: Props) {
 
       <p className="text-lg font-medium mb-1">Support cards to borrow</p>
       <p className="text-sm text-muted-foreground mb-3">
-        Type the card as it appears in the Borrow Card list. The character name on its own
-        is enough &mdash; punctuation and unreadable symbols are ignored when matching, so
+        Pick from the card list, or type a name. Matching reads the borrow list as text and
+        ignores punctuation, so
         <span className="whitespace-nowrap"> &ldquo;[Q&ne;0] Agnes Tachyon&rdquo;</span> and
         &ldquo;Agnes Tachyon&rdquo; both work. Topmost entry wins when several are available.
       </p>
 
-      <div className="flex gap-2 mb-3">
+      <div className="flex gap-2 mb-2">
+        <EventDialog
+          button="Select Support Card"
+          data={supportCards}
+          setSelected={(value) => {
+            if (typeof value === "string") add(toCharacterName(value));
+          }}
+        />
+      </div>
+
+      <div className="flex gap-2 mb-2">
         <Input
-          placeholder="e.g. Kitasan Black"
+          placeholder="Or type a name, e.g. Kitasan Black"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -87,6 +132,12 @@ export default function AutopilotSection({ config, updateConfig }: Props) {
           Add
         </Button>
       </div>
+
+      <p className="text-xs text-muted-foreground mb-3">
+        The card list carries character names only, not card titles, and it lags behind new
+        releases &mdash; SSR Agnes Tachyon is missing from it, for instance. Type the name
+        by hand for anything absent, or to tell two cards of the same character apart.
+      </p>
 
       <div className="flex flex-col gap-2 mb-6">
         {autopilot.borrow_card_targets.length === 0 && (
