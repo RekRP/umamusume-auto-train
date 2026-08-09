@@ -12554,6 +12554,7 @@ const minimum_acceptable_scores = { "max_out_friendships": { "use_user_defined_m
 const training_strategy = { "name": "default", "timeline": { "Junior Year Pre-Debut": "max_out_friendships", "Junior Year Late Aug": "max_out_friendships", "Classic Year Early Jan": "max_out_friendships", "Classic Year Early Jun": "rainbow_training", "Classic Year Early Jul": "rainbow_training", "Classic Year Early Sep": "rainbow_training_2", "Senior Year Early Jan": "rainbow_training_2", "Senior Year Early Jul": "rainbow_training_3", "Senior Year Early Sep": "rainbow_training_3", "Finale Underway": "rainbow_training_3" }, "stat_weight_sets": { "set_1": { "spd": 1, "sta": 1, "pwr": 0.8, "guts": 0.5, "wit": 1, "sp": 0.6 } }, "risk_taking_sets": { "set_1": { "rainbow_increase": 5, "normal_increase": 2 } }, "action_sequence_sets": { "set_1": ["infirmary", "training", "recreation", "rest", "race"] }, "target_stat_sets": { "set_1": { "spd": 600, "sta": 400, "pwr": 400, "guts": 300, "wit": 300 }, "set_2": { "spd": 800, "sta": 660, "pwr": 600, "guts": 400, "wit": 400 }, "set_3": { "spd": 1200, "sta": 800, "pwr": 900, "guts": 400, "wit": 400 } }, "templates": { "do_most_cards": { "training_function": "most_support_cards", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "max_out_friendships": { "training_function": "max_out_friendships", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "most_stat_gain": { "training_function": "most_stat_gain", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "most_stat_gain_2": { "training_function": "most_stat_gain", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_2" }, "most_stat_gain_3": { "training_function": "most_stat_gain", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_3" }, "rainbow_training": { "training_function": "rainbow_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "rainbow_training_2": { "training_function": "rainbow_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_2" }, "rainbow_training_3": { "training_function": "rainbow_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_3" }, "meta_training": { "training_function": "meta_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "meta_training_2": { "training_function": "meta_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_2" }, "meta_training_3": { "training_function": "meta_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_3" } } };
 const window_name = "Bluestacks Umamusume";
 const preset_id = "default";
+const autopilot = { "borrow_card_targets": [], "borrow_required": true, "borrow_max_scrolls": 8, "borrow_match_threshold": 0.8, "max_skill_visits": 5, "wait_when_out_of_tp": true, "idle_poll_seconds": 20 };
 const rawConfig = {
   config_name,
   theme,
@@ -12603,7 +12604,8 @@ const rawConfig = {
   minimum_acceptable_scores,
   training_strategy,
   window_name,
-  preset_id
+  preset_id,
+  autopilot
 };
 function getConfigFromServer(configId) {
   const xhr = new XMLHttpRequest();
@@ -17164,6 +17166,21 @@ const FunctionFallbacksBase = object({
 const FunctionFallbacksSchema = FunctionFallbacksBase.default(
   FunctionFallbacksBase.parse({})
 );
+const AutopilotSchema = object({
+  // Support cards to borrow, best first. Written as they appear in game;
+  // matching normalises punctuation, so "[Q!=0] Agnes Tachyon" and the real
+  // "[Q<>0] Agnes Tachyon" both resolve to the same card.
+  borrow_card_targets: array(string()).default([]),
+  // Stop rather than borrow something unintended when no target is found.
+  borrow_required: boolean().default(true),
+  borrow_max_scrolls: number().default(8),
+  borrow_match_threshold: number().default(0.8),
+  // Cap on Skills visits per career, so a career cannot loop forever between
+  // Complete Career and the Learn screen.
+  max_skill_visits: number().default(5),
+  wait_when_out_of_tp: boolean().default(true),
+  idle_poll_seconds: number().default(20)
+});
 const ConfigSchema = object({
   config_name: string(),
   theme: string().default("Default"),
@@ -17222,7 +17239,10 @@ const ConfigSchema = object({
   event: EventSchema,
   training_strategy: TrainingStrategySchema,
   window_name: string(),
-  preset_id: string()
+  preset_id: string(),
+  // Optional so an existing config.json that predates the autopilot still
+  // validates on import instead of being rejected.
+  autopilot: AutopilotSchema.optional()
 });
 function validateConfig(data) {
   const parsed = ConfigSchema.safeParse(data);
@@ -17368,6 +17388,15 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
+const __iconNode$J = [
+  ["path", { d: "M12 8V4H8", key: "hb8ula" }],
+  ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
+  ["path", { d: "M2 14h2", key: "vft8re" }],
+  ["path", { d: "M20 14h2", key: "4cs60a" }],
+  ["path", { d: "M15 13v2", key: "1xurst" }],
+  ["path", { d: "M9 13v2", key: "rq6x2g" }]
+];
+const Bot = createLucideIcon("bot", __iconNode$J);
 const __iconNode$I = [
   [
     "path",
@@ -21045,7 +21074,8 @@ const navItems = [
   { id: "schedule", label: "Race Schedule", icon: Flag },
   { id: "events", label: "Events", icon: Calendar },
   { id: "timeline", label: "Timeline", icon: PanelsTopLeft },
-  { id: "function-mods", label: "Function Mods", icon: Calculator }
+  { id: "function-mods", label: "Function Mods", icon: Calculator },
+  { id: "autopilot", label: "Autopilot", icon: Bot }
 ];
 function Sidebar({ activeTab, setActiveTab, appVersion, eventCount, raceCount, skillCount }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-64 h-screen sticky top-0 flex flex-col", children: [
@@ -33477,6 +33507,204 @@ function SkillSection$1({ config: config2, updateConfig }) {
     ] })
   ] });
 }
+const FALLBACK = {
+  borrow_card_targets: [],
+  borrow_required: true,
+  borrow_max_scrolls: 8,
+  borrow_match_threshold: 0.8,
+  max_skill_visits: 5,
+  wait_when_out_of_tp: true,
+  idle_poll_seconds: 20
+};
+function AutopilotSection({ config: config2, updateConfig }) {
+  const autopilot2 = config2.autopilot ?? FALLBACK;
+  const [draft, setDraft] = reactExports.useState("");
+  const set = (patch) => updateConfig("autopilot", { ...autopilot2, ...patch });
+  const addTarget = () => {
+    const value = draft.trim();
+    if (!value || autopilot2.borrow_card_targets.includes(value)) return;
+    set({ borrow_card_targets: [...autopilot2.borrow_card_targets, value] });
+    setDraft("");
+  };
+  const removeTarget = (value) => set({
+    borrow_card_targets: autopilot2.borrow_card_targets.filter((t) => t !== value)
+  });
+  const move = (index2, delta) => {
+    const next = [...autopilot2.borrow_card_targets];
+    const target = index2 + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index2], next[target]] = [next[target], next[index2]];
+    set({ borrow_card_targets: next });
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "section-card", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-3xl font-semibold mb-4 flex items-center gap-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Bot, { className: "text-primary" }),
+      "Autopilot"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground mb-4", children: [
+      "Runs Independent Training back to back: borrows a support card, starts the run, buys skills when it ends, then starts the next one. Run it with",
+      " ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("code", { className: "px-1 py-0.5 rounded bg-muted", children: "py -3.12 autopilot_run.py" }),
+      "."
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-lg font-medium mb-1", children: "Support cards to borrow" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground mb-3", children: [
+      "Type the card as it appears in the Borrow Card list. The character name on its own is enough — punctuation and unreadable symbols are ignored when matching, so",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "whitespace-nowrap", children: " “[Q≠0] Agnes Tachyon”" }),
+      " and “Agnes Tachyon” both work. Topmost entry wins when several are available."
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 mb-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          placeholder: "e.g. Kitasan Black",
+          value: draft,
+          onChange: (e) => setDraft(e.target.value),
+          onKeyDown: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addTarget();
+            }
+          }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: addTarget, disabled: !draft.trim(), children: "Add" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 mb-6", children: [
+      autopilot2.borrow_card_targets.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground italic", children: "No cards yet. With none set the bot stops at the borrow list rather than picking something unintended." }),
+      autopilot2.borrow_card_targets.map((target, index2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          className: "px-3 py-2 border-2 border-border rounded-lg flex items-center gap-3",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-sm text-muted-foreground w-6", children: [
+              index2 + 1,
+              "."
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex-1", children: target }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "px-2 text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer",
+                onClick: () => move(index2, -1),
+                disabled: index2 === 0,
+                "aria-label": "Move up",
+                children: "↑"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "px-2 text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer",
+                onClick: () => move(index2, 1),
+                disabled: index2 === autopilot2.borrow_card_targets.length - 1,
+                "aria-label": "Move down",
+                children: "↓"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "px-2 text-muted-foreground hover:text-destructive cursor-pointer",
+                onClick: () => removeTarget(target),
+                "aria-label": `Remove ${target}`,
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "w-4 h-4" })
+              }
+            )
+          ]
+        },
+        target
+      ))
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid lg:grid-cols-3 grid-cols-1 gap-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label col-span-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Checkbox,
+          {
+            id: "borrow-required",
+            checked: autopilot2.borrow_required,
+            onCheckedChange: () => set({ borrow_required: !autopilot2.borrow_required })
+          }
+        ),
+        "Stop If No Card Matches",
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "On means the bot stops rather than borrowing a card you did not ask for. Off means it closes the list and runs without a borrowed card." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Scroll Attempts" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "How far down the borrow list to look before giving up." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            className: "w-18",
+            type: "number",
+            min: 1,
+            value: autopilot2.borrow_max_scrolls,
+            onChange: (e) => set({ borrow_max_scrolls: e.target.valueAsNumber })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Match Strictness" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "How closely a row must match, 0 to 1. Lower tolerates worse text recognition but risks borrowing the wrong card. 0.8 is a good default." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            className: "w-20",
+            type: "number",
+            min: 0,
+            max: 1,
+            step: 0.05,
+            value: autopilot2.borrow_match_threshold,
+            onChange: (e) => set({ borrow_match_threshold: e.target.valueAsNumber })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Max Skill Visits" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "How many times per career the bot may open the skill screen. Caps the loop between Complete Career and Learn." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            className: "w-18",
+            type: "number",
+            min: 0,
+            value: autopilot2.max_skill_visits,
+            onChange: (e) => set({ max_skill_visits: e.target.valueAsNumber })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Idle Poll (seconds)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "How often to check the screen while training is running. Training takes about 50 minutes, so there is no point checking often." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            className: "w-20",
+            type: "number",
+            min: 1,
+            value: autopilot2.idle_poll_seconds,
+            onChange: (e) => set({ idle_poll_seconds: e.target.valueAsNumber })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label col-span-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Checkbox,
+          {
+            id: "wait-out-of-tp",
+            checked: autopilot2.wait_when_out_of_tp,
+            onCheckedChange: () => set({ wait_when_out_of_tp: !autopilot2.wait_when_out_of_tp })
+          }
+        ),
+        "Wait When Out Of TP",
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "A run costs 15 TP and TP regenerates at 1 per 10 minutes, so sustained pace is about one run every 2.5 hours. On means wait for TP rather than stopping." })
+      ] })
+    ] })
+  ] });
+}
 function SkillList({
   list,
   addSkillList,
@@ -40661,6 +40889,8 @@ function App() {
         return /* @__PURE__ */ jsxRuntimeExports.jsx(TimelineSection, { ...props });
       case "function-mods":
         return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(FunctionModsSection, { ...props }) });
+      case "autopilot":
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(AutopilotSection, { ...props });
       default:
         return /* @__PURE__ */ jsxRuntimeExports.jsx(SetUpSection, { ...props });
     }

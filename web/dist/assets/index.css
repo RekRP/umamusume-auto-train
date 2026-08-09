@@ -2231,7 +2231,7 @@
     background-color: var(--color-green-400);
   }
 
-  .bg-muted\/30 {
+  .bg-muted, .bg-muted\/30 {
     background-color: var(--muted);
   }
 
@@ -3538,6 +3538,10 @@
       color: var(--destructive);
     }
 
+    .hover\:text-foreground:hover {
+      color: var(--foreground);
+    }
+
     .hover\:text-red-500:hover {
       color: var(--color-red-500);
     }
@@ -3677,6 +3681,10 @@
 
   .disabled\:cursor-not-allowed:disabled {
     cursor: not-allowed;
+  }
+
+  .disabled\:opacity-30:disabled {
+    opacity: .3;
   }
 
   .disabled\:opacity-50:disabled {

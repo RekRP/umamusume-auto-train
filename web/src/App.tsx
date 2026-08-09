@@ -20,6 +20,7 @@ import EventListSection from "./components/event/EventListSection";
 import RaceScheduleSection from "./components/race-schedule/RaceScheduleSection";
 import RaceListSection from "./components/race-schedule/RaceListSection";
 import SkillSection from "./components/skill/SkillSection";
+import AutopilotSection from "./components/autopilot/AutopilotSection";
 import SkillListSection from "./components/skill/SkillListSection";
 import TrainingSection from "./components/training/TrainingSection";
 import EnergySection from "./components/training/EnergySection";
@@ -328,6 +329,7 @@ function App() {
       case "events": return <EventListSection {...props} />;
       case "timeline": return <TimelineSection {...props} />;
       case "function-mods": return <><FunctionModsSection {...props} /></>;
+      case "autopilot": return <AutopilotSection {...props} />;
       default: return <SetUpSection {...props} />;
     }
   };

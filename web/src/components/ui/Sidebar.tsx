@@ -2,13 +2,14 @@ import { cn } from "@/lib/utils";
 import {
   Settings,
   Dumbbell,
-  // Trophy, 
+  // Trophy,
   Layout,
   Cog,
   Calendar,
   Star,
   Flag,
-  Calculator
+  Calculator,
+  Bot
 } from "lucide-react";
 import { Badge } from "./badge";
 
@@ -30,6 +31,7 @@ const navItems = [
   { id: "events", label: "Events", icon: Calendar },
   { id: "timeline", label: "Timeline", icon: Layout },
   { id: "function-mods", label: "Function Mods", icon: Calculator },
+  { id: "autopilot", label: "Autopilot", icon: Bot },
 ];
 
 export function Sidebar({ activeTab, setActiveTab, appVersion, eventCount, raceCount, skillCount }: SidebarProps) {

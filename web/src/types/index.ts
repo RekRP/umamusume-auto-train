@@ -7,6 +7,7 @@ import { SkillSchema } from "./skill.type";
 import { TrainingStrategySchema } from "./training-strategy.type";
 import { MinimumAcceptableScoresSchema } from "./game-state.type";
 import { FunctionFallbacksSchema } from "./function-fallbacks.type";
+import { AutopilotSchema } from "./autopilot.type";
 
 export const ConfigSchema = z.object({
   config_name: z.string(),
@@ -67,6 +68,9 @@ export const ConfigSchema = z.object({
   training_strategy: TrainingStrategySchema,
   window_name: z.string(),
   preset_id: z.string(),
+  // Optional so an existing config.json that predates the autopilot still
+  // validates on import instead of being rejected.
+  autopilot: AutopilotSchema.optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
