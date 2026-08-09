@@ -12554,7 +12554,7 @@ const minimum_acceptable_scores = { "max_out_friendships": { "use_user_defined_m
 const training_strategy = { "name": "default", "timeline": { "Junior Year Pre-Debut": "max_out_friendships", "Junior Year Late Aug": "max_out_friendships", "Classic Year Early Jan": "max_out_friendships", "Classic Year Early Jun": "rainbow_training", "Classic Year Early Jul": "rainbow_training", "Classic Year Early Sep": "rainbow_training_2", "Senior Year Early Jan": "rainbow_training_2", "Senior Year Early Jul": "rainbow_training_3", "Senior Year Early Sep": "rainbow_training_3", "Finale Underway": "rainbow_training_3" }, "stat_weight_sets": { "set_1": { "spd": 1, "sta": 1, "pwr": 0.8, "guts": 0.5, "wit": 1, "sp": 0.6 } }, "risk_taking_sets": { "set_1": { "rainbow_increase": 5, "normal_increase": 2 } }, "action_sequence_sets": { "set_1": ["infirmary", "training", "recreation", "rest", "race"] }, "target_stat_sets": { "set_1": { "spd": 600, "sta": 400, "pwr": 400, "guts": 300, "wit": 300 }, "set_2": { "spd": 800, "sta": 660, "pwr": 600, "guts": 400, "wit": 400 }, "set_3": { "spd": 1200, "sta": 800, "pwr": 900, "guts": 400, "wit": 400 } }, "templates": { "do_most_cards": { "training_function": "most_support_cards", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "max_out_friendships": { "training_function": "max_out_friendships", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "most_stat_gain": { "training_function": "most_stat_gain", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "most_stat_gain_2": { "training_function": "most_stat_gain", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_2" }, "most_stat_gain_3": { "training_function": "most_stat_gain", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_3" }, "rainbow_training": { "training_function": "rainbow_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "rainbow_training_2": { "training_function": "rainbow_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_2" }, "rainbow_training_3": { "training_function": "rainbow_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_3" }, "meta_training": { "training_function": "meta_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_1" }, "meta_training_2": { "training_function": "meta_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_2" }, "meta_training_3": { "training_function": "meta_training", "action_sequence_set": "set_1", "risk_taking_set": "set_1", "stat_weight_set": "set_1", "target_stat_set": "set_3" } } };
 const window_name = "Bluestacks Umamusume";
 const preset_id = "default";
-const autopilot = { "borrow_card_targets": [], "borrow_required": true, "borrow_max_scrolls": 8, "borrow_match_threshold": 0.8, "use_agenda": false, "max_skill_visits": 5, "wait_when_out_of_tp": true, "idle_poll_seconds": 20 };
+const autopilot = { "borrow_card_targets": [], "borrow_required": true, "borrow_max_scrolls": 8, "borrow_max_reloads": 3, "borrow_match_threshold": 0.8, "use_agenda": false, "max_skill_visits": 5, "wait_when_out_of_tp": true, "idle_poll_seconds": 20 };
 const rawConfig = {
   config_name,
   theme,
@@ -17174,6 +17174,8 @@ const AutopilotSchema = object({
   // Stop rather than borrow something unintended when no target is found.
   borrow_required: boolean().default(true),
   borrow_max_scrolls: number().default(8),
+  // Reloads the list with a different set of friends when no target is in it.
+  borrow_max_reloads: number().default(3),
   borrow_match_threshold: number().default(0.8),
   // Load a saved race agenda before each run, always the first one listed.
   use_agenda: boolean().default(false),
@@ -33514,6 +33516,7 @@ const FALLBACK = {
   borrow_card_targets: [],
   borrow_required: true,
   borrow_max_scrolls: 8,
+  borrow_max_reloads: 3,
   borrow_match_threshold: 0.8,
   use_agenda: false,
   max_skill_visits: 5,
@@ -33671,6 +33674,20 @@ function AutopilotSection({ config: config2, updateConfig }) {
             min: 1,
             value: autopilot2.borrow_max_scrolls,
             onChange: (e) => set({ borrow_max_scrolls: e.target.valueAsNumber })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "uma-label", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "List Reloads" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "When none of your cards are in the list, press its reload button to pull a different set of friends and look again. 0 disables it." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            className: "w-18",
+            type: "number",
+            min: 0,
+            value: autopilot2.borrow_max_reloads,
+            onChange: (e) => set({ borrow_max_reloads: e.target.valueAsNumber })
           }
         )
       ] }),

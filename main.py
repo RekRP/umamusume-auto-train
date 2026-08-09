@@ -156,6 +156,22 @@ def hotkey_listener():
       bot.is_bot_running = False
     sleep(0.5)
 
+def autopilot_listener():
+  # Same toggle as the bot hotkey, and it shares bot.is_bot_running, so only
+  # one of the two can be running at a time.
+  from autopilot.loop import run as run_autopilot
+  while True:
+    keyboard.wait(bot.autopilot_hotkey)
+    if not bot.is_bot_running:
+      print("[AUTOPILOT] Starting...")
+      bot.is_bot_running = True
+      t = threading.Thread(target=run_autopilot, daemon=True)
+      t.start()
+    else:
+      print("[AUTOPILOT] Stopping...")
+      bot.is_bot_running = False
+    sleep(0.5)
+
 def is_port_available(host, port):
   try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -177,11 +193,15 @@ def start_server():
     else:
       print(f"[INFO] Port {port} is already in use. Trying {port + 1}...")
 
+  bot.autopilot_hotkey = f"f{bot.instance + 1}"
+
   threading.Thread(target=hotkey_listener, daemon=True).start()
+  threading.Thread(target=autopilot_listener, daemon=True).start()
   server_config = uvicorn.Config(app, host=host, port=port, workers=1, log_level="warning")
   server = uvicorn.Server(server_config)
   init_logging()
   info(f"Press '{bot.hotkey}' to start/stop the bot.")
+  info(f"Press '{bot.autopilot_hotkey}' to start/stop the autopilot.")
   info(f"[SERVER] Open http://{host}:{port} to configure the bot.")
   server.run()
 

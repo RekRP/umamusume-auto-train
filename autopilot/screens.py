@@ -130,6 +130,10 @@ BORROW_ROW_X = 400
 BORROW_SCROLL_FROM = (400, 820)
 BORROW_SCROLL_TO = (400, 400)
 
+# Reloads the borrow list with a different set of friends. Not a page control -
+# it is the only way to reach candidates the current list never contained.
+BORROW_RELOAD_BUTTON = f"{AUTO}/borrow_refresh_btn.png"
+
 # Badge marking a borrow row whose card is already in the deck. Drawn over the
 # thumbnail, left of the OCR'd text column, so it has to be matched as an image.
 DUPLICATE_BADGE = f"{AUTO}/duplicate_support_badge.png"

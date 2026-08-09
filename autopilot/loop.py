@@ -30,7 +30,8 @@ from autopilot import config as auto_config
 from autopilot.borrow_match import duplicate_row_indexes, find_best, parse_rows
 from autopilot.screens import (
   BORROW_ALLOWLIST, BORROW_LIST_LTRB, BORROW_ROW_X, BORROW_SCROLL_FROM,
-  BORROW_SCROLL_TO, DUPLICATE_BADGE, EDIT_AGENDA_BUTTON, FRIENDS_SLOT_EMPTY, LOAD_LIST_BUTTON,
+  BORROW_RELOAD_BUTTON, BORROW_SCROLL_TO, DUPLICATE_BADGE, EDIT_AGENDA_BUTTON,
+  FRIENDS_SLOT_EMPTY, LOAD_LIST_BUTTON,
   MATCH_THRESHOLD, MY_AGENDAS_BUTTON, SCREENS, SKILL_POINTS_LTRB,
   SKILLS_BUTTON, START_BUTTON, START_CAREER_BUTTON,
 )
@@ -124,6 +125,29 @@ class Autopilot:
       device_action.stop_bot(StopReason.STUCK)
       return
 
+    for reload_count in range(self.cfg.borrow_max_reloads + 1):
+      if self.scan_borrow_list(targets):
+        return
+      if reload_count >= self.cfg.borrow_max_reloads:
+        break
+      # The reload button swaps in a different set of friends rather than
+      # paging, so it is the only way to see candidates this list never had.
+      if not device_action.locate_and_click(BORROW_RELOAD_BUTTON, confidence=MATCH_THRESHOLD):
+        warning("Reload button not found; cannot look at a different set of friends.")
+        break
+      info(f"Not in this list, reloading it ({reload_count + 1} of "
+           f"{self.cfg.borrow_max_reloads}).")
+      sleep(1.5)
+
+    if self.cfg.borrow_required:
+      error(f"None of {targets} found. Stopping rather than borrowing something unintended.")
+      device_action.stop_bot(StopReason.STUCK)
+    else:
+      warning(f"None of {targets} found. Continuing without a borrowed card.")
+      device_action.locate_and_click(CLOSE_BUTTON, confidence=MATCH_THRESHOLD)
+
+  def scan_borrow_list(self, targets: list[str]) -> bool:
+    """Scroll the current list looking for a target. True if one was tapped."""
     for attempt in range(self.cfg.borrow_max_scrolls + 1):
       rows = self.read_borrow_rows()
       debug(f"Borrow list page {attempt + 1}: {[r.card for r in rows]}")
@@ -138,18 +162,12 @@ class Autopilot:
       if row:
         info(f"Borrowing {target!r} - matched {row.card!r} ({score:.3f}) from {row.friend!r}.")
         device_action.click((BORROW_ROW_X, row.center_y))
-        return
+        return True
+
       device_action.flush_screenshot_cache()
       device_action.swipe(BORROW_SCROLL_FROM, BORROW_SCROLL_TO)
       sleep(0.6)
-
-    if self.cfg.borrow_required:
-      error(f"None of {targets} found after {self.cfg.borrow_max_scrolls} scrolls. Stopping "
-            "rather than borrowing something unintended.")
-      device_action.stop_bot(StopReason.STUCK)
-    else:
-      warning(f"None of {targets} found. Continuing without a borrowed card.")
-      device_action.locate_and_click(CLOSE_BUTTON, confidence=MATCH_THRESHOLD)
+    return False
 
   def do_final_confirmation(self, screen):
     """Load the saved agenda first if asked, then start the run."""

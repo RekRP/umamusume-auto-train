@@ -21,6 +21,9 @@ DEFAULTS = {
   "borrow_required": True,
   # How many times to scroll the borrow list before giving up.
   "borrow_max_scrolls": 8,
+  # How many times to reload the borrow list with a different set of friends
+  # when none of the targets are in it.
+  "borrow_max_reloads": 3,
   # Levenshtein ratio a row must reach to count as the wanted card.
   "borrow_match_threshold": 0.80,
   # Load a saved race agenda before starting each run. Always takes the first
@@ -41,6 +44,7 @@ class AutopilotConfig:
   borrow_card_targets: list[str] = field(default_factory=list)
   borrow_required: bool = True
   borrow_max_scrolls: int = 8
+  borrow_max_reloads: int = 3
   borrow_match_threshold: float = 0.80
   use_agenda: bool = False
   max_skill_visits: int = 5

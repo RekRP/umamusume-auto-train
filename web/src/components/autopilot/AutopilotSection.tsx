@@ -36,6 +36,7 @@ const FALLBACK: Autopilot = {
   borrow_card_targets: [],
   borrow_required: true,
   borrow_max_scrolls: 8,
+  borrow_max_reloads: 3,
   borrow_match_threshold: 0.8,
   use_agenda: false,
   max_skill_visits: 5,
@@ -207,6 +208,21 @@ export default function AutopilotSection({ config, updateConfig }: Props) {
             min={1}
             value={autopilot.borrow_max_scrolls}
             onChange={(e) => set({ borrow_max_scrolls: e.target.valueAsNumber })}
+          />
+        </label>
+
+        <label className="uma-label">
+          <span>List Reloads</span>
+          <Tooltips>
+            When none of your cards are in the list, press its reload button to pull a
+            different set of friends and look again. 0 disables it.
+          </Tooltips>
+          <Input
+            className="w-18"
+            type="number"
+            min={0}
+            value={autopilot.borrow_max_reloads}
+            onChange={(e) => set({ borrow_max_reloads: e.target.valueAsNumber })}
           />
         </label>
 

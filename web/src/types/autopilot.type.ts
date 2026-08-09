@@ -8,6 +8,8 @@ export const AutopilotSchema = z.object({
   // Stop rather than borrow something unintended when no target is found.
   borrow_required: z.boolean().default(true),
   borrow_max_scrolls: z.number().default(8),
+  // Reloads the list with a different set of friends when no target is in it.
+  borrow_max_reloads: z.number().default(3),
   borrow_match_threshold: z.number().default(0.8),
   // Load a saved race agenda before each run, always the first one listed.
   use_agenda: z.boolean().default(false),

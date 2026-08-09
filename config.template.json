@@ -520,6 +520,7 @@
     "borrow_card_targets": [],
     "borrow_required": true,
     "borrow_max_scrolls": 8,
+    "borrow_max_reloads": 3,
     "borrow_match_threshold": 0.8,
     "use_agenda": false,
     "max_skill_visits": 5,
