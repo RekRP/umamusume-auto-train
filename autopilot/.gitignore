@@ -1,0 +1,3 @@
+# Raw capture sessions: large, machine-specific, not source.
+# Crop what you need into assets/autopilot/ and commit that instead.
+captures/
