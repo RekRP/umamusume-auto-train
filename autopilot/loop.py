@@ -36,6 +36,9 @@ from autopilot.screens import (
 
 CLOSE_BUTTON = "assets/buttons/close_btn.png"
 
+# Consecutive unsettled checks before acting on the latest reading anyway.
+FORCE_ACT_AFTER = 8
+
 
 class Autopilot:
   def __init__(self, cfg: auto_config.AutopilotConfig):
@@ -45,6 +48,8 @@ class Autopilot:
     self.skills_done = False
     self.last_screen = None
     self.idle_streak = 0
+    self.settling_streak = 0
+    self.repeat_count = 0
 
   # --- screen reading -------------------------------------------------
   def identify(self):
@@ -77,7 +82,9 @@ class Autopilot:
     second_name = second.name if second else None
     if first_name != second_name:
       debug(f"Screen still settling ({first_name} -> {second_name}), waiting.")
-      return None, None, "settling"
+      # The second reading is still returned so the caller can fall back to it
+      # rather than stalling forever on a screen that never settles.
+      return second, pos, "settling"
     return second, pos, "stable"
 
   def read_skill_points(self) -> int:
@@ -173,7 +180,15 @@ class Autopilot:
     screen, _, status = self.identify_settled()
 
     if status == "settling":
-      return "settling"
+      self.settling_streak += 1
+      # Two reads never agreeing is not a transition, it is a screen whose
+      # animation keeps changing what matches. Waiting quietly forever is the
+      # worst outcome, so give it a few tries and then act on what we last saw.
+      if self.settling_streak < FORCE_ACT_AFTER or screen is None:
+        return "settling"
+      warning(f"Screen never settled after {self.settling_streak} checks; "
+              f"acting on {screen.name} anyway. Run with --debug for detail.")
+    self.settling_streak = 0
 
     if screen is None:
       if self.last_screen is not None:
@@ -187,6 +202,14 @@ class Autopilot:
     if screen.name != self.last_screen:
       info(f"Screen: {screen.name} - {screen.action}")
       self.last_screen = screen.name
+      self.repeat_count = 0
+    else:
+      self.repeat_count += 1
+      # Acting on the same screen over and over means the click is landing but
+      # doing nothing, or is not landing at all.
+      if self.repeat_count % 5 == 0:
+        warning(f"Still on {screen.name} after {self.repeat_count} actions - "
+                "the click may not be registering.")
 
     # A career's skill budget resets when its results first appear.
     if screen.name == "training_log":
@@ -196,7 +219,9 @@ class Autopilot:
     if screen.handler:
       getattr(self, f"do_{screen.handler}")(screen)
     else:
-      device_action.locate_and_click(screen.click, confidence=MATCH_THRESHOLD)
+      debug(f"Clicking {screen.click} for {screen.name}.")
+      if not device_action.locate_and_click(screen.click, confidence=MATCH_THRESHOLD):
+        warning(f"Could not find {screen.click} to click on {screen.name}.")
 
     if screen.name == "career_complete":
       self.runs_completed += 1
