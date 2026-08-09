@@ -157,19 +157,24 @@ def hotkey_listener():
     sleep(0.5)
 
 def autopilot_listener():
-  # Same toggle as the bot hotkey, and it shares bot.is_bot_running, so only
-  # one of the two can be running at a time.
+  # Shares bot.is_bot_running with the F1 bot, so only one runs at a time.
   from autopilot.loop import run as run_autopilot
+  worker = None
   while True:
     keyboard.wait(bot.autopilot_hotkey)
-    if not bot.is_bot_running:
-      print("[AUTOPILOT] Starting...")
-      bot.is_bot_running = True
-      t = threading.Thread(target=run_autopilot, daemon=True)
-      t.start()
-    else:
+    # Clearing the flag does not stop the thread instantly, so track the thread
+    # itself. Going by the flag alone starts a second autopilot whenever the
+    # key is pressed again while the previous one is still winding down.
+    if worker is not None and worker.is_alive():
       print("[AUTOPILOT] Stopping...")
       bot.is_bot_running = False
+    elif bot.is_bot_running:
+      print(f"[AUTOPILOT] The bot is running. Press '{bot.hotkey}' to stop it first.")
+    else:
+      print("[AUTOPILOT] Starting...")
+      bot.is_bot_running = True
+      worker = threading.Thread(target=run_autopilot, daemon=True)
+      worker.start()
     sleep(0.5)
 
 def is_port_available(host, port):

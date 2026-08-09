@@ -258,21 +258,31 @@ class Autopilot:
     scanning. init_skill_py() resets its turn gate, which paces buying during
     a career and is meaningless once the career is over.
     """
+    if not core_config.IS_AUTO_BUY_SKILL:
+      warning('"Auto Buy Skills" is off in the Skills settings, so nothing will be '
+              "bought. Turn it on to have the autopilot spend skill points.")
+      self.leave_skill_screen()
+      return
+
     sp = self.read_skill_points()
     if sp < 0:
       warning("Could not read the skill point total; leaving the skill screen.")
-      self.skills_done = True
-      device_action.locate_and_click("assets/buttons/back_btn.png",
-                                     region_ltrb=constants.SCREEN_BOTTOM_BBOX)
+      self.leave_skill_screen()
       return
 
-    info(f"Skill points available: {sp} (buying above {core_config.SKILL_PTS_CHECK}).")
+    info(f"Skill points: {sp} (threshold {core_config.SKILL_PTS_CHECK}, "
+         f"{len(core_config.SKILL_LIST)} skill(s) on the buy list).")
     init_skill_py()
     if buy_skill({"current_stats": {"sp": sp}}, core_config.SKILL_CHECK_TURNS) is False:
-      debug("buy_skill declined - below the configured threshold. Not returning here.")
-      self.skills_done = True
-      device_action.locate_and_click("assets/buttons/back_btn.png",
-                                     region_ltrb=constants.SCREEN_BOTTOM_BBOX)
+      warning(f"Skill buying declined: {sp} points against a "
+              f"{core_config.SKILL_PTS_CHECK} threshold. Not returning here this career.")
+      self.leave_skill_screen()
+
+  def leave_skill_screen(self) -> None:
+    """Back out of the Learn screen and stop revisiting it this career."""
+    self.skills_done = True
+    device_action.locate_and_click("assets/buttons/back_btn.png",
+                                   region_ltrb=constants.SCREEN_BOTTOM_BBOX)
 
   # --- one tick -------------------------------------------------------
   def step(self) -> str:
@@ -360,15 +370,28 @@ def run() -> None:
   # is pointless. Back off rather than paying the long wait at every transition.
   BRIEF_IDLES = 5
 
+  def rest(seconds: float) -> None:
+    """Sleep in slices so a stop request is noticed promptly.
+
+    The long training poll is 20s; sleeping it in one go means the hotkey
+    appears dead for that long after being pressed.
+    """
+    end = time.time() + seconds
+    while bot.is_bot_running:
+      remaining = end - time.time()
+      if remaining <= 0:
+        return
+      sleep(min(0.5, remaining))
+
   try:
     while bot.is_bot_running:
       status = pilot.step()
       if status == "acted":
-        sleep(1.0)
+        rest(1.0)
       elif status == "settling":
-        sleep(0.3)
+        rest(0.3)
       else:
-        sleep(1.0 if pilot.idle_streak <= BRIEF_IDLES else cfg.idle_poll_seconds)
+        rest(1.0 if pilot.idle_streak <= BRIEF_IDLES else cfg.idle_poll_seconds)
   except BotStopException as e:
     info(f"{e}")
   except KeyboardInterrupt:
