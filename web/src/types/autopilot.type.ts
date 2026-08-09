@@ -9,6 +9,8 @@ export const AutopilotSchema = z.object({
   borrow_required: z.boolean().default(true),
   borrow_max_scrolls: z.number().default(8),
   borrow_match_threshold: z.number().default(0.8),
+  // Load a saved race agenda before each run, always the first one listed.
+  use_agenda: z.boolean().default(false),
   // Cap on Skills visits per career, so a career cannot loop forever between
   // Complete Career and the Learn screen.
   max_skill_visits: z.number().default(5),

@@ -51,8 +51,15 @@ SCREENS: tuple[Screen, ...] = (
   Screen("support_formation", f"{AUTO}/start_career_btn.png",
          "open the borrow list if the slot is empty, else start",
          handler="formation"),
+  # Must rank above "agenda": the Agenda header template also scores 0.940 on
+  # this dialog, while this one is unique at 1.000.
+  Screen("my_agendas", f"{AUTO}/my_agendas_header.png",
+         "load the first saved agenda", handler="my_agendas"),
+  Screen("agenda", f"{AUTO}/agenda_header.png",
+         "open the saved agendas, or close once one is loaded", handler="agenda"),
   Screen("final_confirmation", f"{AUTO}/start_btn.png",
-         "spend TP and begin training", click=f"{AUTO}/start_btn.png"),
+         "load the agenda if wanted, then spend TP and begin training",
+         handler="final_confirmation"),
   Screen("home", f"{AUTO}/career_btn.png",
          "open Career", click=f"{AUTO}/career_btn.png"),
 
@@ -101,6 +108,14 @@ FRIENDS_SLOT_EMPTY = f"{AUTO}/friends_slot_empty.png"
 SKILLS_BUTTON = f"{AUTO}/skills_btn_career_complete.png"
 
 START_CAREER_BUTTON = f"{AUTO}/start_career_btn.png"
+START_BUTTON = f"{AUTO}/start_btn.png"
+
+# Agenda flow: Final Confirmation -> Edit -> Agenda -> My Agendas ->
+# Load List -> back to Agenda, now filled -> Close -> Start.
+EDIT_AGENDA_BUTTON = f"{AUTO}/edit_agenda_btn.png"
+MY_AGENDAS_BUTTON = f"{AUTO}/my_agendas_btn.png"
+# Repeats once per saved agenda; locate() returns the topmost, i.e. the first.
+LOAD_LIST_BUTTON = f"{AUTO}/load_list_btn.png"
 
 MATCH_THRESHOLD = 0.85
 

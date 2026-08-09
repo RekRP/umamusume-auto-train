@@ -30,8 +30,9 @@ from autopilot import config as auto_config
 from autopilot.borrow_match import find_best, is_duplicate, parse_rows
 from autopilot.screens import (
   BORROW_ALLOWLIST, BORROW_LIST_LTRB, BORROW_ROW_X, BORROW_SCROLL_FROM,
-  BORROW_SCROLL_TO, FRIENDS_SLOT_EMPTY, MATCH_THRESHOLD, SCREENS,
-  SKILL_POINTS_LTRB, SKILLS_BUTTON, START_CAREER_BUTTON,
+  BORROW_SCROLL_TO, EDIT_AGENDA_BUTTON, FRIENDS_SLOT_EMPTY, LOAD_LIST_BUTTON,
+  MATCH_THRESHOLD, MY_AGENDAS_BUTTON, SCREENS, SKILL_POINTS_LTRB,
+  SKILLS_BUTTON, START_BUTTON, START_CAREER_BUTTON,
 )
 
 CLOSE_BUTTON = "assets/buttons/close_btn.png"
@@ -46,6 +47,7 @@ class Autopilot:
     self.runs_completed = 0
     self.skill_visits = 0
     self.skills_done = False
+    self.agenda_loaded = False
     self.last_screen = None
     self.idle_streak = 0
     self.settling_streak = 0
@@ -138,6 +140,42 @@ class Autopilot:
       warning(f"None of {targets} found. Continuing without a borrowed card.")
       device_action.locate_and_click(CLOSE_BUTTON, confidence=MATCH_THRESHOLD)
 
+  def do_final_confirmation(self, screen):
+    """Load the saved agenda first if asked, then start the run."""
+    if self.cfg.use_agenda and not self.agenda_loaded:
+      if device_action.locate(EDIT_AGENDA_BUTTON, confidence=MATCH_THRESHOLD):
+        info("Loading the saved agenda before starting.")
+        device_action.locate_and_click(EDIT_AGENDA_BUTTON, confidence=MATCH_THRESHOLD)
+        return
+      # Not finding Edit must not become a loop back to this same screen.
+      warning("Edit button not found; starting without loading an agenda.")
+      self.agenda_loaded = True
+
+    info("Starting the run.")
+    device_action.locate_and_click(START_BUTTON, confidence=MATCH_THRESHOLD)
+
+  def do_agenda(self, screen):
+    """Open the saved agendas, or close once one has been loaded."""
+    if self.agenda_loaded:
+      info("Agenda loaded, closing the dialog.")
+      device_action.locate_and_click(CLOSE_BUTTON, confidence=MATCH_THRESHOLD)
+    else:
+      device_action.locate_and_click(MY_AGENDAS_BUTTON, confidence=MATCH_THRESHOLD)
+
+  def do_my_agendas(self, screen):
+    """Load the first saved agenda.
+
+    Load List repeats once per saved agenda; locate() returns the topmost
+    match, which is the first entry in the list.
+    """
+    if device_action.locate_and_click(LOAD_LIST_BUTTON, confidence=MATCH_THRESHOLD):
+      self.agenda_loaded = True
+      info("Loaded the first saved agenda.")
+      return
+    warning("No Load List button found; closing without loading an agenda.")
+    self.agenda_loaded = True
+    device_action.locate_and_click(CLOSE_BUTTON, confidence=MATCH_THRESHOLD)
+
   def do_complete_career(self, screen):
     """Spend skill points while any remain, then finish the career."""
     if not self.skills_done and self.skill_visits < self.cfg.max_skill_visits:
@@ -215,6 +253,9 @@ class Autopilot:
     if screen.name == "training_log":
       self.skill_visits = 0
       self.skills_done = False
+    # Home is the start of a fresh cycle, so the next run needs its own agenda.
+    if screen.name == "home":
+      self.agenda_loaded = False
 
     if screen.handler:
       getattr(self, f"do_{screen.handler}")(screen)

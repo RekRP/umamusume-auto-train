@@ -23,6 +23,9 @@ DEFAULTS = {
   "borrow_max_scrolls": 8,
   # Levenshtein ratio a row must reach to count as the wanted card.
   "borrow_match_threshold": 0.80,
+  # Load a saved race agenda before starting each run. Always takes the first
+  # entry under My Agendas.
+  "use_agenda": False,
   # Cap on Skills visits per career, so a career can never loop forever
   # between Complete Career and the Learn screen.
   "max_skill_visits": 5,
@@ -39,6 +42,7 @@ class AutopilotConfig:
   borrow_required: bool = True
   borrow_max_scrolls: int = 8
   borrow_match_threshold: float = 0.80
+  use_agenda: bool = False
   max_skill_visits: int = 5
   wait_when_out_of_tp: bool = True
   idle_poll_seconds: float = 20.0

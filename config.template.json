@@ -521,6 +521,7 @@
     "borrow_required": true,
     "borrow_max_scrolls": 8,
     "borrow_match_threshold": 0.8,
+    "use_agenda": false,
     "max_skill_visits": 5,
     "wait_when_out_of_tp": true,
     "idle_poll_seconds": 20.0
