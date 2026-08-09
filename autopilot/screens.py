@@ -86,4 +86,27 @@ FRIENDS_SLOT_EMPTY = f"{AUTO}/friends_slot_empty.png"
 # lobby's (upstream skills_btn.png scores 0.558 here).
 SKILLS_BUTTON = f"{AUTO}/skills_btn_career_complete.png"
 
+START_CAREER_BUTTON = f"{AUTO}/start_career_btn.png"
+
 MATCH_THRESHOLD = 0.85
+
+# --- geometry, in ADB frame coordinates (800x1080) --------------------
+# main.py shifts GAME_WINDOW_BBOX by -155 for ADB, giving (0,0,800,1080),
+# so these line up with utils/constants.py once that shift is applied.
+
+# Text column of the Borrow Card rows, left of the "Following" badge.
+BORROW_LIST_LTRB = (225, 175, 530, 935)
+# Where to tap a chosen row, and the swipe that scrolls the list one page.
+BORROW_ROW_X = 400
+BORROW_SCROLL_FROM = (400, 820)
+BORROW_SCROLL_TO = (400, 400)
+
+# Skill point total on the Learn screen, right of the "Skill Points" bar.
+# Verified reading 3258 off a real frame.
+SKILL_POINTS_LTRB = (560, 342, 680, 375)
+
+# easyocr allowlist for the Borrow Card rows. The repo default omits brackets,
+# which measurably degrades card titles ([Teio-Oo-Oolll] 0.80 -> 1.00).
+BORROW_ALLOWLIST = (
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-!.,'#? []()"
+)
