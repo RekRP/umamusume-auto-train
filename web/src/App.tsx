@@ -332,7 +332,7 @@ function App() {
       // The skill sections are shown here too: they decide what the autopilot
       // buys when a run ends, and hunting for them across two other tabs was
       // the thing people missed.
-      case "autopilot": return <><AutopilotSection {...props} /><SkillSection {...props} /><SkillListSection {...props} /></>;
+      case "autopilot": return <><AutopilotSection {...props} /><SkillSection {...props} forAutopilot /><SkillListSection {...props} /></>;
       default: return <SetUpSection {...props} />;
     }
   };

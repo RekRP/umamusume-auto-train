@@ -7,9 +7,15 @@ import Tooltips from "@/components/_c/Tooltips";
 type Props = {
   config: Config;
   updateConfig: UpdateConfigType;
+  /**
+   * Hides settings the autopilot ignores. It buys once, after a career, so
+   * there is no race to check before and no turn pacing to apply - it resets
+   * that gate deliberately so buying is never skipped.
+   */
+  forAutopilot?: boolean;
 };
 
-export default function SkillSection({ config, updateConfig }: Props) {
+export default function SkillSection({ config, updateConfig, forAutopilot }: Props) {
   const { skill } = config;
 
   return (
@@ -27,24 +33,28 @@ export default function SkillSection({ config, updateConfig }: Props) {
           Auto Buy Skills <Tooltips>Try to buy selected skills. Single and double circle skills cannot be specified, even if they're separate in the skill list, bot will buy both versions if it can.</Tooltips>
         </label>
 
-        <label className={`uma-label ${skill.is_auto_buy_skill ? "" : "disabled"}`}>
-          <Checkbox
-            checked={skill.check_skill_before_races}
-            onCheckedChange={() => updateConfig("skill", { ...skill, check_skill_before_races: !skill.check_skill_before_races })}
-          />
-          Check Skills Before Races
-          <Tooltips>This will always trigger a check for skills before races, but it also obeys the minimum turns.</Tooltips>
-        </label>
-        <label className={`uma-label ${skill.is_auto_buy_skill ? "" : "disabled"}`}>
-          <span>Turns Before Checking Skills</span><Tooltips>Minimum turns before trying to buy skills</Tooltips>
-          <Input
-            className="w-18"
-            step={1}
-            type="number"
-            value={skill.skill_check_turns}
-            onChange={(e) => updateConfig("skill", { ...skill, skill_check_turns: e.target.valueAsNumber })}
-          />
-        </label>
+        {!forAutopilot && (
+          <>
+            <label className={`uma-label ${skill.is_auto_buy_skill ? "" : "disabled"}`}>
+              <Checkbox
+                checked={skill.check_skill_before_races}
+                onCheckedChange={() => updateConfig("skill", { ...skill, check_skill_before_races: !skill.check_skill_before_races })}
+              />
+              Check Skills Before Races
+              <Tooltips>This will always trigger a check for skills before races, but it also obeys the minimum turns.</Tooltips>
+            </label>
+            <label className={`uma-label ${skill.is_auto_buy_skill ? "" : "disabled"}`}>
+              <span>Turns Before Checking Skills</span><Tooltips>Minimum turns before trying to buy skills</Tooltips>
+              <Input
+                className="w-18"
+                step={1}
+                type="number"
+                value={skill.skill_check_turns}
+                onChange={(e) => updateConfig("skill", { ...skill, skill_check_turns: e.target.valueAsNumber })}
+              />
+            </label>
+          </>
+        )}
         <label className={`uma-label ${skill.is_auto_buy_skill ? "" : "disabled"}`}>
           <span>Points Before Checking Skills</span><Tooltips>Minimum skill points before trying to buy skills.</Tooltips>
           <Input

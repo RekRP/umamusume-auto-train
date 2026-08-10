@@ -33451,7 +33451,7 @@ function RaceScheduleSection({ config: config2, updateConfig }) {
     )
   ] });
 }
-function SkillSection$1({ config: config2, updateConfig }) {
+function SkillSection$1({ config: config2, updateConfig, forAutopilot }) {
   const { skill: skill2 } = config2;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "section-card", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-3xl font-semibold mb-4 flex items-center gap-3", children: [
@@ -33471,30 +33471,32 @@ function SkillSection$1({ config: config2, updateConfig }) {
         "Auto Buy Skills ",
         /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "Try to buy selected skills. Single and double circle skills cannot be specified, even if they're separate in the skill list, bot will buy both versions if it can." })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `uma-label ${skill2.is_auto_buy_skill ? "" : "disabled"}`, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Checkbox,
-          {
-            checked: skill2.check_skill_before_races,
-            onCheckedChange: () => updateConfig("skill", { ...skill2, check_skill_before_races: !skill2.check_skill_before_races })
-          }
-        ),
-        "Check Skills Before Races",
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "This will always trigger a check for skills before races, but it also obeys the minimum turns." })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `uma-label ${skill2.is_auto_buy_skill ? "" : "disabled"}`, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Turns Before Checking Skills" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "Minimum turns before trying to buy skills" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
-          {
-            className: "w-18",
-            step: 1,
-            type: "number",
-            value: skill2.skill_check_turns,
-            onChange: (e) => updateConfig("skill", { ...skill2, skill_check_turns: e.target.valueAsNumber })
-          }
-        )
+      !forAutopilot && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `uma-label ${skill2.is_auto_buy_skill ? "" : "disabled"}`, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Checkbox,
+            {
+              checked: skill2.check_skill_before_races,
+              onCheckedChange: () => updateConfig("skill", { ...skill2, check_skill_before_races: !skill2.check_skill_before_races })
+            }
+          ),
+          "Check Skills Before Races",
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "This will always trigger a check for skills before races, but it also obeys the minimum turns." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `uma-label ${skill2.is_auto_buy_skill ? "" : "disabled"}`, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Turns Before Checking Skills" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Tooltips, { children: "Minimum turns before trying to buy skills" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              className: "w-18",
+              step: 1,
+              type: "number",
+              value: skill2.skill_check_turns,
+              onChange: (e) => updateConfig("skill", { ...skill2, skill_check_turns: e.target.valueAsNumber })
+            }
+          )
+        ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `uma-label ${skill2.is_auto_buy_skill ? "" : "disabled"}`, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Points Before Checking Skills" }),
@@ -40971,7 +40973,7 @@ function App() {
       case "autopilot":
         return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(AutopilotSection, { ...props }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SkillSection$1, { ...props }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SkillSection$1, { ...props, forAutopilot: true }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(SkillSection, { ...props })
         ] });
       default:
