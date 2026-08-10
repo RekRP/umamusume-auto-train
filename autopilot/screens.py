@@ -81,6 +81,13 @@ SCREENS: tuple[Screen, ...] = (
   Screen("sparks", f"{AUTO}/reroll_sparks_btn.png",
          "accept the inheritance sparks without rerolling",
          click=f"{BTN}/confirm_btn.png"),
+  # Appears sometimes after a career, offering to follow whoever lent the
+  # support card. Declined. Identified by its header rather than its Cancel
+  # button, which is shared with Final Confirmation and the two confirmation
+  # dialogs - a blanket "press Cancel" rule would cancel the run itself.
+  Screen("follow_trainer", f"{AUTO}/follow_trainer_header.png",
+         "decline following the trainer who lent support",
+         click=f"{BTN}/cancel_btn.png"),
   Screen("career_complete", f"{AUTO}/to_home_btn.png",
          "return to Home and close the loop", click=f"{AUTO}/to_home_btn.png"),
 
