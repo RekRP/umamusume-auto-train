@@ -103,6 +103,10 @@ The bot repeats a run you have already configured. It does not make these choice
 - **The support deck** — only the borrowed friend slot is filled automatically. Your own
   five come from the saved formation.
 
+One choice it *does* make: while an event is running, Next on Scenario Select opens *Choose
+Career Mode*. The bot always picks **Normal Mode** — it will not take a Trainer Aptitude
+Test for you.
+
 ## 8. Run it
 
 With `main.py` running, press **F2** to start and stop the autopilot. **F1** still runs the

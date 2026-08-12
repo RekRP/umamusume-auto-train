@@ -36,11 +36,12 @@ from autopilot.screens import (
   BORROW_ALLOWLIST, BORROW_LIST_LTRB, BORROW_ROW_X, BORROW_SCROLL_FROM,
   BORROW_RELOAD_BUTTON, BORROW_SCROLL_TO, DUPLICATE_BADGE, EDIT_AGENDA_BUTTON,
   FRIENDS_SLOT_EMPTY, LOAD_LIST_BUTTON,
-  MATCH_THRESHOLD, MY_AGENDAS_BUTTON, SCREENS, SKILL_POINTS_LTRB,
-  SKILLS_BUTTON, START_BUTTON, START_CAREER_BUTTON,
+  MATCH_THRESHOLD, MY_AGENDAS_BUTTON, NORMAL_MODE_LABEL, SCREENS,
+  SKILL_POINTS_LTRB, SKILLS_BUTTON, START_BUTTON, START_CAREER_BUTTON,
 )
 
 CLOSE_BUTTON = "assets/buttons/close_btn.png"
+CONFIRM_BUTTON = "assets/buttons/confirm_btn.png"
 
 # Consecutive unsettled checks before acting on the latest reading anyway.
 FORCE_ACT_AFTER = 8
@@ -153,6 +154,25 @@ class Autopilot:
     else:
       info("Support formation ready, starting the career.")
       device_action.locate_and_click(START_CAREER_BUTTON, confidence=MATCH_THRESHOLD)
+
+  def do_career_mode(self, screen):
+    """Pick Normal Mode on the event-time popup, then confirm.
+
+    Deliberately does not fall back to confirming blind. Pressing Confirm
+    without having found the row starts whichever mode the game has
+    highlighted, and there is no way to tell afterwards - the TP is spent and
+    the career is running. Sitting on the popup instead is loud (step() warns
+    about repeats) and costs nothing but time.
+    """
+    if not device_action.locate_and_click(NORMAL_MODE_LABEL, confidence=MATCH_THRESHOLD):
+      warning("Normal Mode row not found on the career mode popup. Not confirming, "
+              "because that would start whichever mode is currently highlighted.")
+      return
+
+    # Let the selection move before Confirm reads it.
+    sleep(0.4)
+    info("Normal Mode selected, confirming.")
+    device_action.locate_and_click(CONFIRM_BUTTON, confidence=MATCH_THRESHOLD)
 
   def do_borrow(self, screen):
     targets = self.cfg.borrow_card_targets

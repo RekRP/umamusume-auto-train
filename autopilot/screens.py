@@ -44,8 +44,24 @@ SCREENS: tuple[Screen, ...] = (
   # are both in the same place as Trainee Select's, so the header text is the
   # only thing telling them apart: this template scores 0.663 on Trainee
   # Select and theirs scores 0.656 here.
+  # Clicks the below-ribbon crop, not the whole Next button: while an event is
+  # running the game hangs an "Event Underway" banner over the button's top
+  # edge, and that is enough to sink the full template from 0.953 to 0.59 -
+  # under the threshold, so the bot saw the screen and then sat there unable to
+  # press anything. The crop starts below the banner and scores the same either
+  # way. The header is unaffected, so identification never needed changing.
   Screen("scenario_select", f"{AUTO}/scenario_select_header.png",
-         "keep the shown scenario and continue", click=f"{BTN}/next_btn.png"),
+         "keep the shown scenario and continue",
+         click=f"{AUTO}/next_btn_below_ribbon.png"),
+  # While an event is running, Next opens this instead of going straight on to
+  # Trainee Select. The generic "confirmation" rule at the bottom would already
+  # clear it - Normal Mode is highlighted when the popup opens, so pressing
+  # Confirm happens to do the right thing - but only for as long as that stays
+  # true. Whatever is highlighted is what gets started, and an Aptitude Test
+  # run costs the same 15 TP as the one that was actually wanted, so the mode
+  # is picked here rather than inherited.
+  Screen("career_mode", f"{AUTO}/career_mode_header.png",
+         "choose Normal Mode, then confirm", handler="career_mode"),
   Screen("trainee_select", f"{AUTO}/trainee_select_header.png",
          "keep the selected trainee and continue", click=f"{BTN}/next_btn.png"),
   Screen("support_formation", f"{AUTO}/start_career_btn.png",
@@ -109,6 +125,11 @@ SCREENS: tuple[Screen, ...] = (
 # Template that tells the borrow slot is still empty. Checked by the
 # "formation" handler; scores 1.000 empty vs 0.581 filled.
 FRIENDS_SLOT_EMPTY = f"{AUTO}/friends_slot_empty.png"
+
+# The Normal Mode row on the Choose Career Mode popup. Cropped to the title
+# text on plain white, clear of the border and the selection brackets, so it
+# reads the same whether or not the row is the one currently selected.
+NORMAL_MODE_LABEL = f"{AUTO}/normal_mode_label.png"
 
 # The Complete Career screen's Skills button, which differs from the career
 # lobby's (upstream skills_btn.png scores 0.558 here).
